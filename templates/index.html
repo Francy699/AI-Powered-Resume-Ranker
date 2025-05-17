@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Resume Ranker</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Resume Ranker</h1>
+    <form action="/process" method="post" enctype="multipart/form-data">
+        <label for="job_description">Job Description:</label><br>
+        <textarea name="job_description" rows="10" cols="50" required></textarea><br><br>
+        <label for="resumes">Upload Resumes (PDFs):</label><br>
+        <input type="file" name="resumes" multiple accept=".pdf" required><br><br>
+        <input type="submit" value="Rank Resumes">
+    </form>
+    {% if error %}
+        <p class="error">{{ error }}</p>
+    {% endif %}
+</body>
+</html>
