@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bias Detection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex">
+    <!-- Sidebar -->
+    <div class="w-64 bg-gray-800 text-white h-screen fixed">
+        <div class="p-4">
+            <h1 class="text-2xl font-bold">Resume Ranker</h1>
+        </div>
+        <nav class="mt-4">
+            <a href="{{ url_for('dashboard') }}" class="block py-2 px-4 hover:bg-gray-700">Dashboard</a>
+            <a href="{{ url_for('history') }}" class="block py-2 px-4 hover:bg-gray-700">History</a>
+            <a href="{{ url_for('bias') }}" class="block py-2 px-4 bg-gray-900 hover:bg-gray-700">Bias Detection</a>
+            <a href="{{ url_for('logout') }}" class="block py-2 px-4 hover:bg-gray-700">Logout</a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="ml-64 p-8 w-full">
+        <h2 class="text-3xl font-semibold mb-6">Bias Detection Results</h2>
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resume</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bias Indicators</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for entry in history %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ entry.resume_name }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-500">
+                                {% for bias in entry.bias %}
+                                {{ bias }}<br>
+                                {% endfor %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ entry.timestamp }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

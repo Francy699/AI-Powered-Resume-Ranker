@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ranked Resumes</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        a { margin-top: 20px; display: inline-block; }
+    </style>
+</head>
+<body>
+    <h1>Ranked Resumes</h1>
+    <h2>Top Keywords in Job Description: {{ top_job_keywords|join(', ') }}</h2>
+    <table>
+        <tr>
+            <th>Rank</th>
+            <th>Resume Name</th>
+            <th>Score</th>
+            <th>Matching Keywords</th>
+        </tr>
+        {% for i, (name, score, keywords) in enumerate(ranked_resumes, 1) %}
+        <tr>
+            <td>{{ i }}</td>
+            <td>{{ name }}</td>
+            <td>{{ score }}</td>
+            <td>{{ keywords|join(', ') }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <a href="/download">Download CSV</a>
+</body>
+</html>

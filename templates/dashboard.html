@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Ranker Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .nav-bar {
+            background: linear-gradient(to right, #1e3a8a, #3b82f6);
+        }
+        .tab {
+            transition: all 0.3s ease;
+        }
+        .tab.active {
+            background-color: #3b82f6;
+            color: white;
+            border-bottom: 3px solid #ffffff;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .card {
+            background: linear-gradient(135deg, #ffffff, #e0f2fe);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 50;
+        }
+        .modal-content {
+            background: linear-gradient(135deg, #ffffff, #e0f2fe);
+            margin: 5% auto;
+            padding: 20px;
+            width: 90%;
+            max-width: 600px;
+            border-radius: 8px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-content h3 {
+            margin-bottom: 16px;
+        }
+        .close-modal {
+            float: right;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .resume-preview-section {
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+        .resume-preview-section:hover {
+            transform: scale(1.05);
+            z-index: 10;
+        }
+        .timeline {
+            display: none;
+            position: relative;
+            margin: 20px 0;
+        }
+        .timeline-item {
+            display: inline-block;
+            width: 25%;
+            text-align: center;
+            position: relative;
+        }
+        .timeline-item .circle {
+            width: 20px;
+            height: 20px;
+            background-color: #e5e7eb;
+            border-radius: 50%;
+            margin: 0 auto;
+            transition: background-color 0.3s ease;
+        }
+        .timeline-item.active .circle {
+            background-color: #3b82f6;
+        }
+        .timeline-item .label {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        .timeline-item.active .label {
+            color: #3b82f6;
+            font-weight: bold;
+        }
+        .timeline-item .percentage {
+            font-size: 10px;
+            color: #6b7280;
+        }
+        .timeline-item.active .percentage {
+            color: #3b82f6;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #e5e7eb;
+            z-index: -1;
+        }
+        .theme-light {
+            background-color: #f3f4f6;
+        }
+        .theme-dark {
+            background-color: #1e293b;
+            color: #e2e8f0;
+        }
+        .theme-dark .bg-white {
+            background-color: #2d3748;
+        }
+        .theme-dark .text-gray-700 {
+            color: #e2e8f0;
+        }
+        .theme-dark .text-gray-500 {
+            color: #a0aec0;
+        }
+        .theme-dark .bg-gray-100 {
+            background-color: #1e293b;
+        }
+        .theme-dark .bg-gray-200 {
+            background-color: #4a5568;
+        }
+        .theme-dark .text-red-500 {
+            color: #f56565;
+        }
+        .theme-dark .file\:bg-indigo-50 {
+            background-color: #5a4b8c;
+        }
+        .theme-dark .file\:text-indigo-700 {
+            color: #93c5fd;
+        }
+        .theme-dark .hover\:file\:bg-indigo-100:hover {
+            background-color: #6b5b9a;
+        }
+        .theme-dark .card {
+            background: linear-gradient(135deg, #2d3748, #4a5568);
+        }
+        .theme-dark .modal-content {
+            background: linear-gradient(135deg, #2d3748, #4a5568);
+        }
+        .loading-spinner {
+            display: none;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .score-circle {
+            position: relative;
+            width: 60px;
+            height: 60px;
+        }
+        .score-circle svg {
+            transform: rotate(-90deg);
+        }
+        .score-circle .circle-bg {
+            fill: none;
+            stroke: #e5e7eb;
+            stroke-width: 8;
+        }
+        .score-circle .circle-progress {
+            fill: none;
+            stroke: #10b981;
+            stroke-width: 8;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s ease;
+        }
+        .score-circle .circle-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+            color: #10b981;
+        }
+        .score-average .circle-progress {
+            stroke: #f59e0b;
+        }
+        .score-average .circle-text {
+            color: #f59e0b;
+        }
+        .score-poor .circle-progress {
+            stroke: #ef4444;
+        }
+        .score-poor .circle-text {
+            color: #ef4444;
+        }
+        .tooltip {
+            position: relative;
+        }
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background-color: #1e3a8a;
+            color: #fff;
+            text-align: center;
+            padding: 5px;
+            border-radius: 6px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        .sidebar {
+            width: 250px;
+            position: fixed;
+            top: 80px;
+            left: -250px;
+            height: calc(100vh - 80px);
+            background-color: #ffffff;
+            transition: left 0.3s ease;
+            z-index: 40;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+        .sidebar.open {
+            left: 0;
+        }
+        .theme-dark .sidebar {
+            background-color: #2d3748;
+        }
+        .sidebar-toggle {
+            position: fixed;
+            top: 100px;
+            left: 10px;
+            z-index: 41;
+        }
+        .toast {
+            visibility: hidden;
+            min-width: 250px;
+            margin-left: -125px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 16px;
+            position: fixed;
+            z-index: 100;
+            left: 50%;
+            bottom: 30px;
+            font-size: 16px;
+            opacity: 0;
+            transition: opacity 0.5s, visibility 0.5s;
+        }
+        .toast.show {
+            visibility: visible;
+            opacity: 1;
+        }
+        .toast.success {
+            background-color: #10b981;
+        }
+        .toast.error {
+            background-color: #ef4444;
+        }
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+        .theme-dark .dropdown-content {
+            background-color: #4a5568;
+        }
+        .dropdown-content button {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            width: 100%;
+            text-align: left;
+        }
+        .theme-dark .dropdown-content button {
+            color: #e2e8f0;
+        }
+        .dropdown-content button:hover {
+            background-color: #ddd;
+        }
+        .theme-dark .dropdown-content button:hover {
+            background-color: #5a677a;
+        }
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        .comparison-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 50;
+        }
+        .comparison-modal-content {
+            background: linear-gradient(135deg, #ffffff, #e0f2fe);
+            margin: 5% auto;
+            padding: 20px;
+            width: 90%;
+            max-width: 1000px;
+            border-radius: 8px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .theme-dark .comparison-modal-content {
+            background: linear-gradient(135deg, #2d3748, #4a5568);
+        }
+        #progress-bar {
+            width: 0%;
+            transition: width 0.5s ease-in-out;
+        }
+        .focus\:ring-2:focus {
+            ring: 2px solid #3b82f6;
+        }
+        .resume-item {
+            flex: 0 0 calc(33.33% - 16px);
+            margin: 8px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+        }
+        .resume-item:hover {
+            transform: scale(1.03);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+        .tabs-sticky {
+            position: sticky;
+            top: 80px;
+            z-index: 20;
+            background-color: inherit;
+        }
+        .accordion-header {
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .accordion-header:hover {
+            background-color: #e0f2fe;
+        }
+        .theme-dark .accordion-header:hover {
+            background-color: #4a5568;
+        }
+        .accordion-content {
+            display: none;
+            transition: all 0.3s ease;
+        }
+        .accordion-content.open {
+            display: block;
+        }
+        .chevron {
+            transition: transform 0.3s ease;
+        }
+        .chevron.open {
+            transform: rotate(180deg);
+        }
+        .tag {
+            display: inline-block;
+            padding: 4px 8px;
+            margin: 2px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .tag-skills {
+            background-color: #d1fae5;
+            color: #10b981;
+        }
+        .tag-experience {
+            background-color: #fef3c7;
+            color: #f59e0b;
+        }
+        .tag:hover {
+            opacity: 0.8;
+        }
+        .feedback-content {
+            display: none;
+            transition: all 0.3s ease;
+        }
+        .feedback-content.open {
+            display: block;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 34px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #3b82f6;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #ffffff, #e0f2fe);
+            transition: transform 0.2s ease;
+        }
+        .theme-dark .stats-card {
+            background: linear-gradient(135deg, #2d3748, #4a5568);
+        }
+        .animated-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #3b82f6;
+        }
+        .theme-dark .animated-number {
+            color: #93c5fd;
+        }
+        .fab {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 50;
+        }
+        .fab-button {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #3b82f6;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, background-color 0.3s ease;
+        }
+        .fab-button:hover {
+            transform: scale(1.1);
+            background-color: #60a5fa;
+        }
+        .fab-menu {
+            display: none;
+            position: absolute;
+            bottom: 70px;
+            right: 0;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .fab-menu.open {
+            display: flex;
+        }
+        .fab-menu button {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #ffffff;
+            color: #3b82f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        .theme-dark .fab-menu button {
+            background-color: #2d3748;
+            color: #93c5fd;
+        }
+        .fab-menu button:hover {
+            transform: scale(1.1);
+        }
+        .bg-gradient-animated {
+            background: linear-gradient(45deg, #1e3a8a, #3b82f6, #1e3a8a, #3b82f6);
+            background-size: 400%;
+            animation: gradientAnimation 15s ease infinite;
+        }
+        .theme-dark .bg-gradient-animated {
+            background: linear-gradient(45deg, #1e293b, #2d3748, #1e293b, #2d3748);
+        }
+        @keyframes gradientAnimation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .ai-button {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .ai-button:hover {
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+        }
+        .ai-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: 0.5s;
+        }
+        .ai-button:hover::before {
+            left: 100%;
+        }
+        .ai-pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+        .confidence-score {
+            font-size: 12px;
+            color: #3b82f6;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        .theme-dark .confidence-score {
+            color: #93c5fd;
+        }
+        .confidence-score:hover {
+            color: #60a5fa;
+        }
+        .theme-dark .confidence-score:hover {
+            color: #bfdbfe;
+        }
+        .radar-chart-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .flowchart {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #e0f2fe, #ffffff);
+            border-radius: 8px;
+        }
+        .theme-dark .flowchart {
+            background: linear-gradient(135deg, #2d3748, #4a5568);
+        }
+        .flowchart-step {
+            background-color: #3b82f6;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+        }
+        .flowchart-arrow {
+            font-size: 20px;
+            color: #3b82f6;
+        }
+        .theme-dark .flowchart-arrow {
+            color: #93c5fd;
+        }
+        @media (max-width: 1024px) {
+            .resume-item {
+                flex: 0 0 calc(50% - 16px);
+            }
+        }
+        @media (max-width: 768px) {
+            .nav-bar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .nav-bar .flex {
+                flex-direction: column;
+                width: 100%;
+            }
+            .nav-bar button, .nav-bar a {
+                width: 100%;
+                text-align: left;
+                margin-bottom: 8px;
+            }
+            .tabs {
+                flex-direction: column;
+            }
+            .tab {
+                width: 100%;
+                text-align: center;
+            }
+            .modal-content, .comparison-modal-content {
+                width: 95%;
+                margin: 10% auto;
+            }
+            .resume-item {
+                flex: 0 0 100%;
+                margin: 8px 0;
+            }
+            .flowchart {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .flowchart-arrow {
+                transform: rotate(90deg);
+            }
+        }
+    </style>
+    <script>
+        let currentTheme = '{{ session.get("theme", "theme-light") }}';
+        let selectedResumes = [];
+
+        function showLoadingSpinner() {
+            console.log("Showing loading spinner");
+            document.getElementById('loading-spinner').style.display = 'block';
+            document.getElementById('rank-button').disabled = true;
+            document.getElementById('timeline').style.display = 'block';
+            updateTimeline();
+            updateProgress();
+        }
+
+        function updateProgress() {
+            fetch('/progress')
+                .then(response => response.json())
+                .then(data => {
+                    const progress = data.progress;
+                    document.getElementById('progress-bar').style.width = progress + '%';
+                    if (progress < 100) {
+                        setTimeout(updateProgress, 500);
+                    } else {
+                        document.getElementById('progress-bar').style.width = '0%';
+                        document.getElementById('timeline').style.display = 'none';
+                        document.getElementById('loading-spinner').style.display = 'none';
+                        document.getElementById('rank-button').disabled = false;
+                        showToast('Ranking completed successfully!', 'success');
+                    }
+                })
+                .catch(error => {
+                    showToast('Error during ranking: ' + error.message, 'error');
+                });
+        }
+
+        function updateTimeline() {
+            const timelineItems = document.getElementsByClassName('timeline-item');
+            let currentStep = 0;
+            const steps = ['uploading', 'extracting', 'clustering', 'ranking'];
+            const percentages = [25, 50, 75, 100];
+            const interval = setInterval(() => {
+                if (currentStep < steps.length) {
+                    timelineItems[currentStep].classList.add('active');
+                    timelineItems[currentStep].querySelector('.percentage').innerText = `${percentages[currentStep]}%`;
+                    currentStep++;
+                } else {
+                    clearInterval(interval);
+                }
+            }, 1000);
+        }
+
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            toast.innerText = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => {
+                toast.className = 'toast';
+            }, 3000);
+        }
+
+        window.onload = function() {
+            console.log("Window loaded");
+            document.getElementById('loading-spinner').style.display = 'none';
+            document.getElementById('rank-button').disabled = false;
+            applyTheme();
+            console.log("Theme applied");
+            setupTabs();
+            console.log("Tabs set up");
+            setupSortingFiltering();
+            console.log("Sorting and filtering set up");
+            setupModals();
+            console.log("Modals set up");
+            setupSearch();
+            console.log("Search set up");
+            setupComparison();
+            console.log("Comparison set up");
+            setupSidebar();
+            console.log("Sidebar set up");
+            setupAccordions();
+            console.log("Accordions set up");
+            setupScoreCircles();
+            console.log("Score circles set up");
+            setupQuickFilters();
+            console.log("Quick filters set up");
+            setupFeedbackToggle();
+            console.log("Feedback toggle set up");
+            setupStatsAnimation();
+            console.log("Stats animation set up");
+            setupFab();
+            console.log("FAB set up");
+            setupAIInsights();
+            console.log("AI Insights set up");
+        };
+
+        function applyTheme() {
+            document.body.className = 'bg-gradient-animated';
+            document.body.classList.add(currentTheme);
+            document.getElementById('theme-toggle').checked = currentTheme === 'theme-dark';
+        }
+
+        function toggleTheme() {
+            currentTheme = currentTheme === 'theme-light' ? 'theme-dark' : 'theme-light';
+            fetch('/set_theme', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'theme=' + currentTheme
+            }).then(() => applyTheme());
+        }
+
+        function setupTabs() {
+            const tabs = document.getElementsByClassName('tab');
+            const tabContents = document.getElementsByClassName('tab-content');
+            for (let i = 0; i < tabs.length; i++) {
+                tabs[i].addEventListener('click', function() {
+                    console.log("Tab clicked:", this.getAttribute('data-tab'));
+                    for (let j = 0; j < tabs.length; j++) {
+                        tabs[j].classList.remove('active');
+                        tabContents[j].classList.remove('active');
+                    }
+                    this.classList.add('active');
+                    tabContents[i].classList.add('active');
+                });
+            }
+        }
+
+        function setupSortingFiltering() {
+            const sortSelect = document.getElementById('sort-resumes');
+            const filterSelect = document.getElementById('filter-cluster');
+            const resumeItems = Array.from(document.getElementsByClassName('resume-item'));
+
+            sortSelect.addEventListener('change', function() {
+                const value = this.value;
+                resumeItems.sort((a, b) => {
+                    const scoreA = parseFloat(a.getAttribute('data-score'));
+                    const scoreB = parseFloat(b.getAttribute('data-score'));
+                    return value === 'asc' ? scoreA - scoreB : scoreB - scoreA;
+                });
+                const container = document.getElementById('resume-analysis');
+                resumeItems.forEach(item => container.appendChild(item));
+            });
+
+            filterSelect.addEventListener('change', function() {
+                const value = this.value;
+                resumeItems.forEach(item => {
+                    const cluster = item.getAttribute('data-cluster');
+                    item.style.display = (value === 'all' || cluster === value) ? 'block' : 'none';
+                });
+            });
+        }
+
+        function setupQuickFilters() {
+            const filterButtons = document.getElementsByClassName('filter-button');
+            const resumeItems = Array.from(document.getElementsByClassName('resume-item'));
+
+            for (let i = 0; i < filterButtons.length; i++) {
+                filterButtons[i].addEventListener('click', function() {
+                    const filterType = this.getAttribute('data-filter');
+                    for (let j = 0; j < filterButtons.length; j++) {
+                        filterButtons[j].classList.remove('bg-indigo-600', 'text-white');
+                        filterButtons[j].classList.add('bg-gray-200', 'text-gray-700');
+                    }
+                    this.classList.remove('bg-gray-200', 'text-gray-700');
+                    this.classList.add('bg-indigo-600', 'text-white');
+
+                    resumeItems.forEach(item => {
+                        const score = parseFloat(item.getAttribute('data-score'));
+                        if (filterType === 'all') {
+                            item.style.display = 'block';
+                        } else if (filterType === 'top' && score >= 80) {
+                            item.style.display = 'block';
+                        } else if (filterType === 'average' && score >= 50 && score < 80) {
+                            item.style.display = 'block';
+                        } else if (filterType === 'below' && score < 50) {
+                            item.style.display = 'block';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                });
+            }
+        }
+
+        function setupSearch() {
+            const searchInput = document.getElementById('resume-search');
+            const resumeItems = Array.from(document.getElementsByClassName('resume-item'));
+
+            searchInput.addEventListener('input', function() {
+                const query = this.value.toLowerCase();
+                resumeItems.forEach(item => {
+                    const resumeName = item.querySelector('h3').innerText.toLowerCase();
+                    const resumeText = item.innerText.toLowerCase();
+                    item.style.display = (resumeName.includes(query) || resumeText.includes(query)) ? 'block' : 'none';
+                });
+            });
+        }
+
+        function setupComparison() {
+            const compareButtons = document.getElementsByClassName('compare-button');
+            const comparisonModal = document.getElementById('comparison-modal');
+            const closeComparison = document.getElementById('close-comparison');
+
+            for (let i = 0; i < compareButtons.length; i++) {
+                compareButtons[i].addEventListener('click', function() {
+                    console.log("Compare button clicked, index:", this.getAttribute('data-index'));
+                    const resumeIndex = this.getAttribute('data-index');
+                    if (selectedResumes.includes(resumeIndex)) {
+                        selectedResumes = selectedResumes.filter(idx => idx !== resumeIndex);
+                        this.classList.remove('bg-yellow-500');
+                        this.classList.add('bg-indigo-600');
+                        this.innerText = 'Compare';
+                    } else {
+                        if (selectedResumes.length < 2) {
+                            selectedResumes.push(resumeIndex);
+                            this.classList.remove('bg-indigo-600');
+                            this.classList.add('bg-yellow-500');
+                            this.innerText = 'Remove';
+                        }
+                        if (selectedResumes.length === 2) {
+                            showComparisonModal();
+                        }
+                    }
+                });
+            }
+
+            closeComparison.addEventListener('click', function() {
+                comparisonModal.style.display = 'none';
+                selectedResumes = [];
+                Array.from(compareButtons).forEach(btn => {
+                    btn.classList.remove('bg-yellow-500');
+                    btn.classList.add('bg-indigo-600');
+                    btn.innerText = 'Compare';
+                });
+            });
+
+            window.addEventListener('click', function(event) {
+                if (event.target === comparisonModal) {
+                    comparisonModal.style.display = 'none';
+                    selectedResumes = [];
+                    Array.from(compareButtons).forEach(btn => {
+                        btn.classList.remove('bg-yellow-500');
+                        btn.classList.add('bg-indigo-600');
+                        btn.innerText = 'Compare';
+                    });
+                }
+            });
+        }
+
+        function showComparisonModal() {
+            const comparisonModal = document.getElementById('comparison-modal');
+            const comparisonContent = document.getElementById('comparison-content');
+            const resumeItems = Array.from(document.getElementsByClassName('resume-item'));
+
+            let html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-6">';
+            selectedResumes.forEach(index => {
+                const resume = resumeItems.find(item => item.getAttribute('data-index') === index);
+                html += `
+                    <div class="border p-4 rounded-lg">
+                        <h3 class="text-lg font-semibold mb-2">${resume.querySelector('h3').innerText}</h3>
+                        <p><strong>Score:</strong> ${resume.querySelector('.circle-text').innerText}</p>
+                        <p><strong>Education:</strong> ${resume.querySelector('.tooltip:nth-child(2) p').innerText}</p>
+                        <p><strong>Experience:</strong> ${resume.querySelector('.tooltip:nth-child(3) p').innerText}</p>
+                        <p><strong>Skills:</strong> ${resume.querySelector('.tooltip:nth-child(4) p').innerText}</p>
+                        <p><strong>Responsibilities Match:</strong> ${resume.querySelector('.tooltip:nth-child(5) p').innerText}</p>
+                        <p><strong>Requirements Match:</strong> ${resume.querySelector('.tooltip:nth-child(6) p').innerText}</p>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            comparisonContent.innerHTML = html;
+            comparisonModal.style.display = 'block';
+        }
+
+        function setupModals() {
+            const modalButtons = document.getElementsByClassName('modal-button');
+            const modals = document.getElementsByClassName('modal');
+            const closeButtons = document.getElementsByClassName('close-modal');
+
+            for (let i = 0; i < modalButtons.length; i++) {
+                modalButtons[i].addEventListener('click', function() {
+                    const modalId = this.getAttribute('data-modal');
+                    document.getElementById(modalId).style.display = 'block';
+                });
+            }
+
+            for (let i = 0; i < closeButtons.length; i++) {
+                closeButtons[i].addEventListener('click', function() {
+                    this.closest('.modal').style.display = 'none';
+                });
+            }
+
+            window.addEventListener('click', function(event) {
+                for (let i = 0; i < modals.length; i++) {
+                    if (event.target === modals[i]) {
+                        modals[i].style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        function setupSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleButton = document.getElementById('sidebar-toggle');
+
+            toggleButton.addEventListener('click', function() {
+                sidebar.classList.toggle('open');
+            });
+
+            window.addEventListener('click', function(event) {
+                if (!sidebar.contains(event.target) && !toggleButton.contains(event.target)) {
+                    sidebar.classList.remove('open');
+                }
+            });
+        }
+
+        function setupAccordions() {
+            const accordionHeaders = document.getElementsByClassName('accordion-header');
+            for (let i = 0; i < accordionHeaders.length; i++) {
+                accordionHeaders[i].addEventListener('click', function() {
+                    const content = this.nextElementSibling;
+                    const chevron = this.querySelector('.chevron');
+                    content.classList.toggle('open');
+                    chevron.classList.toggle('open');
+                });
+            }
+        }
+
+        function setupScoreCircles() {
+            const scoreCircles = document.getElementsByClassName('score-circle');
+            for (let i = 0; i < scoreCircles.length; i++) {
+                const score = parseFloat(scoreCircles[i].getAttribute('data-score'));
+                const progress = scoreCircles[i].querySelector('.circle-progress');
+                const circumference = 2 * Math.PI * 26;
+                const offset = circumference - (score / 100) * circumference;
+                progress.style.strokeDasharray = `${circumference} ${circumference}`;
+                progress.style.strokeDashoffset = offset;
+            }
+        }
+
+        function setupFeedbackToggle() {
+            const feedbackButtons = document.getElementsByClassName('feedback-toggle');
+            for (let i = 0; i < feedbackButtons.length; i++) {
+                feedbackButtons[i].addEventListener('click', function() {
+                    console.log("Feedback toggle clicked");
+                    const content = this.nextElementSibling;
+                    content.classList.toggle('open');
+                    this.innerText = content.classList.contains('open') ? 'Show Less' : 'Show More';
+                });
+            }
+        }
+
+        function setupStatsAnimation() {
+            const totalResumes = document.getElementById('total-resumes');
+            const avgScore = document.getElementById('avg-score');
+            const topScore = document.getElementById('top-score');
+
+            if (!totalResumes || !avgScore || !topScore) return;
+
+            const total = parseInt(totalResumes.getAttribute('data-value'));
+            const avg = parseFloat(avgScore.getAttribute('data-value'));
+            const top = parseFloat(topScore.getAttribute('data-value'));
+
+            animateNumber(totalResumes, 0, total, 2000);
+            animateNumber(avgScore, 0, avg, 2000, '%');
+            animateNumber(topScore, 0, top, 2000, '%');
+        }
+
+        function animateNumber(element, start, end, duration, suffix = '') {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const value = progress * (end - start) + start;
+                element.innerText = (suffix === '%' ? value.toFixed(2) : Math.floor(value)) + suffix;
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        function setupFab() {
+            const fabButton = document.getElementById('fab-button');
+            const fabMenu = document.getElementById('fab-menu');
+
+            fabButton.addEventListener('click', function() {
+                fabMenu.classList.toggle('open');
+            });
+
+            document.getElementById('scroll-to-top').addEventListener('click', function() {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                fabMenu.classList.remove('open');
+            });
+
+            document.getElementById('refresh-results').addEventListener('click', function() {
+                location.reload();
+            });
+
+            document.getElementById('toggle-sidebar').addEventListener('click', function() {
+                document.getElementById('sidebar').classList.toggle('open');
+                fabMenu.classList.remove('open');
+            });
+
+            window.addEventListener('click', function(event) {
+                if (!fabButton.contains(event.target) && !fabMenu.contains(event.target)) {
+                    fabMenu.classList.remove('open');
+                }
+            });
+        }
+
+        function setupAIInsights() {
+            const keywordChartCtx = document.getElementById('keyword-chart')?.getContext('2d');
+            if (keywordChartCtx) {
+                const keywords = JSON.parse('{{ jd_keywords | tojson  if jd_keywords else ["python", "leadership", "teamwork", "sql"] | tojson | safe  }}');
+                const importance = keywords.map(() => Math.random() * 100);
+                new Chart(keywordChartCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: keywords,
+                        datasets: [{
+                            label: 'Keyword Importance (%)',
+                            data: importance,
+                            backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                            borderColor: '#3b82f6',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                title: { display: true, text: 'Importance (%)' }
+                            },
+                            x: {
+                                title: { display: true, text: 'Keywords' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            const radarChartCtx = document.getElementById('skill-gap-chart')?.getContext('2d');
+            if (radarChartCtx) {
+                const topResumeSkills = JSON.parse('{% if results %}{{ results[0].section_scores | tojson }}{% else %}{"Education": 80, "Experience": 70, "Skills": 90}{% endif %}');
+                const jdSkills = { "Education": 90, "Experience": 85, "Skills": 95 };
+                new Chart(radarChartCtx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['Education', 'Experience', 'Skills'],
+                        datasets: [
+                            {
+                                label: 'Top Resume',
+                                data: [topResumeSkills.Education, topResumeSkills.Experience, topResumeSkills.Skills],
+                                backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                                borderColor: '#3b82f6',
+                                borderWidth: 2
+                            },
+                            {
+                                label: 'Job Description',
+                                data: [jdSkills.Education, jdSkills.Experience, jdSkills.Skills],
+                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                borderColor: '#ff6384',
+                                borderWidth: 2
+                            }
+                        ]
+                    },
+                    options: {
+                        scales: {
+                            r: {
+                                beginAtZero: true,
+                                max: 100,
+                                ticks: { stepSize: 20 }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+    </script>
+</head>
+<body class="bg-gradient-animated">
+    <!-- Top Navigation Bar -->
+    <nav class="nav-bar text-white p-4 sticky top-0 z-10 shadow-md">
+        <div class="flex justify-between items-center">
+            <h1 class="text-xl font-bold">Resume Ranker: AI & ML Powered</h1>
+            <div class="flex space-x-4 items-center">
+                <label class="toggle-switch">
+                    <input id="theme-toggle" type="checkbox" onchange="toggleTheme()">
+                    <span class="slider"></span>
+                </label>
+                <a href="{{ url_for('logout') }}" class="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md text-white hover:bg-opacity-80 focus:outline-none focus:ring-2">
+                    <i class="fas fa-sign-out-alt mr-2" aria-hidden="true"></i>Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Sidebar for Filters -->
+    <div id="sidebar" class="sidebar p-4">
+        <h3 class="text-lg font-semibold mb-4">Filters & Sorting</h3>
+        <div class="space-y-4">
+            <div>
+                <label for="sort-resumes" class="text-sm font-medium text-gray-700 mr-2">Sort by Score:</label>
+                <select id="sort-resumes" class="border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 w-full">
+                    <option value="desc">High to Low</option>
+                    <option value="asc">Low to High</option>
+                </select>
+            </div>
+            <div>
+                <label for="filter-cluster" class="text-sm font-medium text-gray-700 mr-2">Filter by Cluster:</label>
+                <select id="filter-cluster" class="border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 w-full">
+                    <option value="all">All Clusters</option>
+                    {% if results %}
+                        {% for result in results %}
+                            <option value="{{ result.cluster }}">Cluster {{ result.cluster }}</option>
+                        {% endfor %}
+                    {% else %}
+                        <option value="1">Cluster 1</option>
+                        <option value="2">Cluster 2</option>
+                    {% endif %}
+                </select>
+            </div>
+        </div>
+    </div>
+    <button id="sidebar-toggle" class="sidebar-toggle bg-indigo-600 text-white p-2 rounded-full shadow-md hover:bg-indigo-700">
+        <i class="fas fa-filter" aria-hidden="true"></i>
+    </button>
+
+    <!-- Main Content -->
+    <div class="container mx-auto p-6">
+        <!-- Error Message -->
+        {% if error %}
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                <span class="block sm:inline">{{ error }}</span>
+            </div>
+        {% endif %}
+
+        <!-- Upload Resumes & Job Description -->
+        <div class="card p-6 mb-6 rounded-lg shadow-lg">
+            <h2 class="text-xl font-semibold mb-4">Upload Resumes & Job Description</h2>
+            <form method="post" action="{{ url_for('dashboard') }}" enctype="multipart/form-data" class="space-y-2" onsubmit="showLoadingSpinner()">
+                <!-- Job Description (Text) Accordion -->
+                <div>
+                    <div class="accordion-header flex justify-between items-center p-3 rounded-md">
+                        <label class="block text-sm font-medium text-gray-700">Job Description (Text)</label>
+                        <i class="fas fa-chevron-down chevron" aria-hidden="true"></i>
+                    </div>
+                    <div class="accordion-content p-3">
+                        <textarea id="job_description" name="job_description" rows="5" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter job description here...">{{ sample_jd }}</textarea>
+                    </div>
+                </div>
+                <!-- Upload Job Description (PDF) Accordion -->
+                <div>
+                    <div class="accordion-header flex justify-between items-center p-3 rounded-md">
+                        <label class="block text-sm font-medium text-gray-700">Upload Job Description (PDF)</label>
+                        <i class="fas fa-chevron-down chevron" aria-hidden="true"></i>
+                    </div>
+                    <div class="accordion-content p-3">
+                        <input type="file" id="jd_file" name="jd_file" accept=".pdf" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                    </div>
+                </div>
+                <!-- Custom Keywords Accordion -->
+                <div>
+                    <div class="accordion-header flex justify-between items-center p-3 rounded-md">
+                        <label class="block text-sm font-medium text-gray-700">Custom Keywords (optional)</label>
+                        <i class="fas fa-chevron-down chevron" aria-hidden="true"></i>
+                    </div>
+                    <div class="accordion-content p-3">
+                        <input type="text" id="custom_keywords" name="custom_keywords" value="{{ custom_keywords | join(', ') }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., teamwork, leadership, python">
+                    </div>
+                </div>
+                <!-- Upload Resumes Accordion -->
+                <div>
+                    <div class="accordion-header flex justify-between items-center p-3 rounded-md">
+                        <label class="block text-sm font-medium text-gray-700">Upload Resumes (PDF)</label>
+                        <i class="fas fa-chevron-down chevron" aria-hidden="true"></i>
+                    </div>
+                    <div class="accordion-content p-3">
+                        <input type="file" id="resumes" name="resumes" multiple accept=".pdf" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                    </div>
+                </div>
+                <!-- Upload Resume ZIP Accordion -->
+                <div>
+                    <div class="accordion-header flex justify-between items-center p-3 rounded-md">
+                        <label class="block text-sm font-medium text-gray-700">Upload Resume ZIP File</label>
+                        <i class="fas fa-chevron-down chevron" aria-hidden="true"></i>
+                    </div>
+                    <div class="accordion-content p-3">
+                        <input type="file" id="zip_file" name="zip_file" accept=".zip" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                    </div>
+                </div>
+                <button id="rank-button" type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ai-button ai-pulse focus:outline-none focus:ring-2 mt-4">
+                    <i class="fas fa-robot mr-2" aria-hidden="true"></i>Rank with AI
+                </button>
+                <div id="loading-spinner" class="loading-spinner mt-2"></div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                    <div id="progress-bar" class="bg-indigo-600 h-2.5 rounded-full"></div>
+                </div>
+                <div id="timeline" class="timeline">
+                    <div class="timeline-item" data-step="uploading">
+                        <div class="circle"></div>
+                        <div class="label">Uploading Files</div>
+                        <div class="percentage">0%</div>
+                    </div>
+                    <div class="timeline-item" data-step="extracting">
+                        <div class="circle"></div>
+                        <div class="label">Extracting Features</div>
+                        <div class="percentage">0%</div>
+                    </div>
+                    <div class="timeline-item" data-step="clustering">
+                        <div class="circle"></div>
+                        <div class="label">Applying Clustering</div>
+                        <div class="percentage">0%</div>
+                    </div>
+                    <div class="timeline-item" data-step="ranking">
+                        <div class="circle"></div>
+                        <div class="label">Scoring Resumes</div>
+                        <div class="percentage">0%</div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs flex space-x-2 mb-6 tabs-sticky">
+            <button class="tab active px-4 py-2 rounded-md text-sm font-medium" data-tab="resume-analysis">Resume Analysis</button>
+            <button class="tab px-4 py-2 rounded-md text-sm font-medium" data-tab="jd-analysis">JD Analysis</button>
+            <button class="tab px-4 py-2 rounded-md text-sm font-medium" data-tab="ai-insights">AI Insights</button>
+        </div>
+
+        <!-- Resume Analysis Tab -->
+        <div id="resume-analysis" class="tab-content active">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">Ranked Resumes</h2>
+                <div class="flex space-x-2">
+                    <input id="resume-search" type="text" placeholder="Search resumes..." class="border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2">
+                    <div class="dropdown">
+                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2">
+                            <i class="fas fa-download mr-2" aria-hidden="true"></i>Export
+                        </button>
+                        <div class="dropdown-content">
+                            <form method="post" action="{{ url_for('download_report') }}">
+                                <button type="submit" class="flex items-center">
+                                    <i class="fas fa-file-pdf mr-2" aria-hidden="true"></i>Download PDF
+                                </button>
+                            </form>
+                            <form method="post" action="{{ url_for('download_csv') }}">
+                                <button type="submit" class="flex items-center">
+                                    <i class="fas fa-file-csv mr-2" aria-hidden="true"></i>Download CSV
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Quick Filters -->
+            <div class="flex space-x-2 mb-4">
+                <button class="filter-button bg-indigo-600 text-white px-3 py-1 rounded-md text-sm" data-filter="all">All</button>
+                <button class="filter-button bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-sm" data-filter="top">Top (80+)</button>
+                <button class="filter-button bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-sm" data-filter="average">Average (50-79)</button>
+                <button class="filter-button bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-sm" data-filter="below">Below (0-49)</button>
+            </div>
+            <!-- Resume Cards -->
+            <div class="flex flex-wrap -mx-2">
+                {% if results %}
+                    {% for result in results %}
+                        <div class="resume-item card p-4 rounded-lg shadow-lg" data-index="{{ loop.index0 }}" data-score="{{ result.score | round(2) }}" data-cluster="{{ result.cluster }}">
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="text-lg font-semibold">{{ result.resume }}</h3>
+                                <div class="score-circle {{ getScoreClass(result.score) }}" data-score="{{ result.score | round(2) }}">
+                                    <svg width="60" height="60">
+                                        <circle class="circle-bg" cx="30" cy="30" r="26"></circle>
+                                        <circle class="circle-progress" cx="30" cy="30" r="26"></circle>
+                                    </svg>
+                                    <div class="circle-text">{{ result.score | round(2) }}%</div>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center mb-2">
+                                <p class="text-sm text-gray-500">Cluster {{ result.cluster }}</p>
+                                <button class="compare-button bg-indigo-600 text-white px-3 py-1 rounded-md text-sm hover:bg-indigo-700" data-index="{{ loop.index0 }}">Compare</button>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 mb-2">
+                                <div class="tooltip">
+                                    <span class="confidence-score">{{ result.section_scores.Education | round(2) }}%</span>
+                                    <span class="tooltip-text">Education Score: {{ result.section_scores.Education | round(2) }}%</span>
+                                    <p class="text-xs text-gray-500">Education</p>
+                                </div>
+                                <div class="tooltip">
+                                    <span class="confidence-score">{{ result.section_scores.Experience | round(2) }}%</span>
+                                    <span class="tooltip-text">Experience Score: {{ result.section_scores.Experience | round(2) }}%</span>
+                                    <p class="text-xs text-gray-500">Experience</p>
+                                </div>
+                                <div class="tooltip">
+                                    <span class="confidence-score">{{ result.section_scores.Skills | round(2) }}%</span>
+                                    <span class="tooltip-text">Skills Score: {{ result.section_scores.Skills | round(2) }}%</span>
+                                    <p class="text-xs text-gray-500">Skills</p>
+                                </div>
+                                <div class="tooltip">
+                                    <span class="confidence-score">{{ result.jd_section_scores.Responsibilities | round(2) }}%</span>
+                                    <span class="tooltip-text">Responsibilities Match: {{ result.jd_section_scores.Responsibilities | round(2) }}%</span>
+                                    <p class="text-xs text-gray-500">Responsibilities</p>
+                                </div>
+                                <div class="tooltip">
+                                    <span class="confidence-score">{{ result.jd_section_scores.Requirements | round(2) }}%</span>
+                                    <span class="tooltip-text">Requirements Match: {{ result.jd_section_scores.Requirements | round(2) }}%</span>
+                                    <p class="text-xs text-gray-500">Requirements</p>
+                                </div>
+                            </div>
+                            <button class="modal-button bg-indigo-600 text-white px-3 py-1 rounded-md text-sm hover:bg-indigo-700 mt-2" data-modal="preview-modal-{{ loop.index0 }}">Preview Resume</button>
+                            <button class="modal-button bg-indigo-600 text-white px-3 py-1 rounded-md text-sm hover:bg-indigo-700 mt-2" data-modal="feedback-modal-{{ loop.index0 }}">Feedback</button>
+                            <button class="modal-button bg-indigo-600 text-white px-3 py-1 rounded-md text-sm hover:bg-indigo-700 mt-2" data-modal="suggestions-modal-{{ loop.index0 }}">Suggestions</button>
+                            <!-- Preview Modal -->
+                            <div id="preview-modal-{{ loop.index0 }}" class="modal">
+                                <div class="modal-content">
+                                    <span class="close-modal">×</span>
+                                    <h3 class="text-lg font-semibold mb-2">Resume Preview: {{ result.resume }}</h3>
+                                    <div class="resume-preview-section p-4 bg-gray-100 rounded-md">
+                                        <p>{{ result.highlighted_text | safe }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Feedback Modal -->
+                            <div id="feedback-modal-{{ loop.index0 }}" class="modal">
+                                <div class="modal-content">
+                                    <span class="close-modal">×</span>
+                                    <h3 class="text-lg font-semibold mb-2">Feedback for {{ result.resume }}</h3>
+                                    <p><strong>JD Match Feedback:</strong> {{ result.jd_feedback }}</p>
+                                    <p><strong>Keyword Density:</strong> {{ result.keyword_density[0] }} keywords ({{ result.keyword_density[1] }})</p>
+                                    <p><strong>Length Feedback:</strong> {{ result.length_feedback[0] }} words - {{ result.length_feedback[1] | join(', ') }}</p>
+                                    {% if result.bias %}
+                                        <p><strong>Potential Bias:</strong> {{ result.bias | join(', ') }}</p>
+                                    {% endif %}
+                                    {% if result.ats_issues %}
+                                        <p><strong>ATS Issues:</strong> {{ result.ats_issues | join(', ') }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <!-- Suggestions Modal -->
+                            <div id="suggestions-modal-{{ loop.index0 }}" class="modal">
+                                <div class="modal-content">
+                                    <span class="close-modal">×</span>
+                                    <h3 class="text-lg font-semibold mb-2">Suggestions for {{ result.resume }}</h3>
+                                    <p><strong>Education:</strong> {{ result.suggestions.Education }}</p>
+                                    <p><strong>Experience:</strong> {{ result.suggestions.Experience }}</p>
+                                    <p><strong>Skills:</strong> {{ result.suggestions.Skills }}</p>
+                                </div>
+                            </div>
+                            <button class="feedback-toggle bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-sm mt-2">Show More</button>
+                            <div class="feedback-content mt-2">
+                                <p><strong>Keyword Density:</strong> {{ result.keyword_density[0] }} keywords ({{ result.keyword_density[1] }})</p>
+                                <p><strong>Length Feedback:</strong> {{ result.length_feedback[0] }} words - {{ result.length_feedback[1] | join(', ') }}</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-gray-500">No resumes ranked yet. Please upload resumes and a job description to start ranking.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- JD Analysis Tab -->
+        <div id="jd-analysis" class="tab-content">
+            <h2 class="text-xl font-semibold mb-4">Job Description Analysis</h2>
+            <div class="card p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold mb-2">Extracted Details</h3>
+                {% if highlighted_jd %}
+                    <div class="mb-4">
+                        <h4 class="text-md font-medium">Highlighted Job Description:</h4>
+                        <p class="mt-2">{{ highlighted_jd | safe }}</p>
+                    </div>
+                    <div class="mb-4">
+                        <h4 class="text-md font-medium">Extracted Keywords:</h4>
+                        <div>
+                            {% for keyword in jd_keywords %}
+                                <span class="tag tag-skills">{{ keyword }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <h4 class="text-md font-medium">JD Sections:</h4>
+                        {% for section, content in jd_sections.items() %}
+                            <p><strong>{{ section }}:</strong> {{ content }}</p>
+                        {% endfor %}
+                    </div>
+                    <div>
+                        <h4 class="text-md font-medium">Keyword Suggestions:</h4>
+                        <div>
+                            {% for suggestion in jd_keyword_suggestions %}
+                                <span class="tag tag-experience">{{ suggestion }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="text-gray-500">No job description provided yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- AI Insights Tab -->
+        <div id="ai-insights" class="tab-content">
+            <h2 class="text-xl font-semibold mb-4">AI Insights</h2>
+            <!-- Statistics -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="stats-card p-4 rounded-lg shadow-lg text-center">
+                    <h3 class="text-lg font-semibold mb-2">Total Resumes</h3>
+                    <p id="total-resumes" class="animated-number" data-value="{{ results | length if results else 0 }}">0</p>
+                </div>
+                <div class="stats-card p-4 rounded-lg shadow-lg text-center">
+                    <h3 class="text-lg font-semibold mb-2">Average Score</h3>
+                    <p id="avg-score" class="animated-number" data-value="{% if results %}{{ (results | map(attribute='score') | list | sum) / (results | length) | round(2) }}{% else %}0{% endif %}">0%</p>
+                </div>
+                <div class="stats-card p-4 rounded-lg shadow-lg text-center">
+                    <h3 class="text-lg font-semibold mb-2">Top Score</h3>
+                    <p id="top-score" class="animated-number" data-value="{% if results %}{{ (results | map(attribute='score') | max) | round(2) }}{% else %}0{% endif %}">0%</p>
+                </div>
+            </div>
+            <!-- Charts -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="card p-6 rounded-lg shadow-lg">
+                    <h3 class="text-lg font-semibold mb-4">Keyword Importance</h3>
+                    <canvas id="keyword-chart"></canvas>
+                </div>
+                <div class="card p-6 rounded-lg shadow-lg">
+                    <h3 class="text-lg font-semibold mb-4">Skill Gap Analysis</h3>
+                    <div class="radar-chart-container">
+                        <canvas id="skill-gap-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <!-- Flowchart -->
+            <div class="card p-6 mt-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold mb-4">Ranking Process Flow</h3>
+                <div class="flowchart">
+                    <div class="flowchart-step">Upload Resumes</div>
+                    <span class="flowchart-arrow">➔</span>
+                    <div class="flowchart-step">Extract Features</div>
+                    <span class="flowchart-arrow">➔</span>
+                    <div class="flowchart-step">Apply Clustering</div>
+                    <span class="flowchart-arrow">➔</span>
+                    <div class="flowchart-step">Score & Rank</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comparison Modal -->
+        <div id="comparison-modal" class="comparison-modal">
+            <div class="comparison-modal-content">
+                <span id="close-comparison" class="close-modal">×</span>
+                <h3 class="text-lg font-semibold mb-4">Resume Comparison</h3>
+                <div id="comparison-content"></div>
+            </div>
+        </div>
+
+        <!-- Floating Action Button -->
+        <div class="fab">
+            <div id="fab-menu" class="fab-menu">
+                <button id="scroll-to-top" class="fab-menu-button">
+                    <i class="fas fa-arrow-up" aria-hidden="true"></i>
+                </button>
+                <button id="refresh-results" class="fab-menu-button">
+                    <i class="fas fa-sync-alt" aria-hidden="true"></i>
+                </button>
+                <button id="toggle-sidebar" class="fab-menu-button">
+                    <i class="fas fa-filter" aria-hidden="true"></i>
+                </button>
+            </div>
+            <button id="fab-button" class="fab-button">
+                <i class="fas fa-plus" aria-hidden="true"></i>
+            </button>
+        </div>
+    </div>
+</body>
+</html>
