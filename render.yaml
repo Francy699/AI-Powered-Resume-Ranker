@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: resume-ranker
+    env: python
+    plan: free
+    region: oregon
+    buildCommand: |
+      apt-get update && apt-get install -y build-essential
+      pip install --upgrade pip
+      pip install -r requirements.txt
+    startCommand: gunicorn resume_ranker:app
