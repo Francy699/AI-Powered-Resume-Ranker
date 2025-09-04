@@ -1,6 +1,11 @@
 flask==2.3.3
+gunicorn==21.2.0
 spacy==3.5.3
 scikit-learn==1.2.2
 pdfminer.six==20221105
 blis==0.7.9
-en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.5.0/en_core_web_sm-3.5.0-py3-none-any.whl
+PyPDF2==3.0.1
+nltk==3.8.1
+pandas==2.0.3
+numpy==1.24.3
+werkzeug==2.3.7
